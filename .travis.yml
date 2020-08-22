@@ -1,0 +1,18 @@
+dist: xenial
+language: python
+python:
+- '3.7'
+install:
+    - python -m pip install dlint
+deploy:
+  provider: pypi
+  user: inbalboa
+  password:
+    secure: "Izp3+Itrn+UkDpfw0hU++JVoY9hep3QhJE0OqkuH1SqrCvPOLcxHipIMKlhNaK25zjLRA1XfmUC1zf6hg40Fz4UdAZSfPLvG0w7a9K4TCIOnrNJgIoYrZyMFUWL0ahVDpd0EpHmh33ZIzv9xvRof6vfeElpOwIZjfBHuMbtgLzgsSUOMcTVHvl8SYyTjjw/Gkdg7PzV5DpUk3HJKn24AnTRUH6qa767aLrg3JRFWMaImBW4Pl69o0r6CyVMM/Z/gBK620QrQkYv4CRs3gzmiWstnuzRWFysI+xFXhR0dBZWimwJQj9JTAWkkrLsyHp7zI4frpw4nT0QgVG9kL47t58HYvw1UWVWQUKnf6hfB7YpYf6wlIbkDMq/cDeghGDGD9tznpY3xfzw6DejAvEDRJIFXFYl3Kmcng6ACT8f0wH4Faj9uCki2KNha4zeyQbjaSB2d1fTxHgKDNYQiYUBxPsn+VuriEFB15fPNeuFQFT/x32BqpiG+O1utktGz/fgXUUI5SCge4DtWc0GqeBSI6rqgCkoSCQIenJHaKIBv9nXFTaXijJzP3XI469EywFFZilHyBPrz3LRKRs7n9xgne0DhHaBZoZ4the1XgOmjJ/qhvwHKeqA1Zxn5SAtJzZXtQZA10jqGmWSMKWWTnO5mZtxvTlaS6rrxGs/qH79WQpM="
+  distributions: sdist bdist_wheel
+  skip_existing: true
+  on:
+    branch: master
+    tags: true
+script:
+    - python -m flake8 --select=DUO pymstodo
