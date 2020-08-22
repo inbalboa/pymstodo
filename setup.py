@@ -16,7 +16,7 @@ def find_requires():
 
 setuptools.setup(
     name='pymstodo',
-    version='0.0.1',
+    version='0.0.2',
     author='Sergey Shlyapugin',
     author_email='shlyapugin@gmail.com',
     description='Microsoft To Do API client',
