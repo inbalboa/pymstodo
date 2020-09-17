@@ -33,6 +33,10 @@ class TaskList:
     def __str__(self) -> str:
         return self.displayName.replace('|', '—').strip()
 
+    @property
+    def link(self) -> str:
+        return 'href=https://to-do.live.com/tasks/{self.list_id}'
+
 
 @dataclasses.dataclass
 class Task:
@@ -202,14 +206,7 @@ class ToDoConnection:
         return Task(**contents)
 
     def delete_task(self, task_id: str, list_id: str) -> bool:
-        """Delete task from list.
-
-        Parameters:
-        task_id (str): task ID
-        list_id (str): list ID
-
-        Returns:
-        bool: true if successful"""
+        """Delete task from list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.delete(f'{ToDoConnection._base_api_url}/lists/{list_id}/tasks/{task_id}')
@@ -217,6 +214,7 @@ class ToDoConnection:
         return bool(resp.ok)
 
     def complete_task(self, task_id: str, list_id: str) -> Optional[Task]:
+        """Complete task from list."""
         return self.update_task(task_id, list_id, status='completed')
 
 

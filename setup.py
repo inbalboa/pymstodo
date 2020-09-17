@@ -1,11 +1,11 @@
 import setuptools
 
+
 def long_description():
     long_description = ''
     with open('README.md', 'r') as ld:
         long_description = ld.read()
     return long_description
-
 
 def find_requires():
     requirements = []
@@ -13,10 +13,15 @@ def find_requires():
         requirements = reqs.readlines()
     return requirements
 
+def find_version():
+    with open('VERSION', 'r') as ver:
+        version_ = ver.readline().strip()
+    return version_
+
 
 setuptools.setup(
     name='pymstodo',
-    version='0.0.2',
+    version=find_version(),
     author='Sergey Shlyapugin',
     author_email='shlyapugin@gmail.com',
     description='Microsoft To Do API client',
@@ -29,6 +34,7 @@ setuptools.setup(
     classifiers=[
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3 :: Only',
         'License :: OSI Approved',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
@@ -36,3 +42,4 @@ setuptools.setup(
     ],
     license='GPLv3'
 )
+
