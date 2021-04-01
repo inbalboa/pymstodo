@@ -2,6 +2,7 @@ import os
 import time
 import json
 import dataclasses
+from datetime import date, datetime
 from typing import List, Optional, TypedDict, Union, Any
 
 from requests_oauthlib import OAuth2Session
@@ -45,8 +46,9 @@ class Task:
     isReminderOn: bool
     importance: bool
     status: str
-    createdDateTime: int
-    lastModifiedDateTime: int
+    createdDateTime: str
+    lastModifiedDateTime: str
+    dueDateTime: str
     body: str
 
     def __init__(self, **kwargs: Union[str, int, bool]) -> None:
@@ -55,6 +57,27 @@ class Task:
 
     def __str__(self) -> str:
         return self.title.replace('|', '—').strip()
+
+    @property
+    def created_date(self):
+        if self.createdDateTime:
+            return datetime.strptime(self.createdDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        else:
+            return date(2000, 1, 1)
+
+    @property
+    def last_mod_date(self):
+        if self.lastModifiedDateTime:
+            return datetime.strptime(self.lastModifiedDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        else:
+            return date(2000, 1, 1)
+
+    @property
+    def due_date(self):
+        if self.dueDateTime:
+            return datetime.strptime(self.dueDateTime['dateTime'].split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        else:
+            return date(2000, 1, 1)
 
 
 class ToDoConnection:
