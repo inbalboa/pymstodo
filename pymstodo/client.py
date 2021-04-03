@@ -2,10 +2,14 @@ import os
 import time
 import json
 import dataclasses
-from datetime import date, datetime
-from typing import List, Optional, TypedDict, Union, Any
+from datetime import datetime
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from requests_oauthlib import OAuth2Session
+
+
+class PymstodoError(Exception):
+    pass
 
 
 class Token(TypedDict):
@@ -17,6 +21,11 @@ class Token(TypedDict):
     refresh_token: str
     id_token: str
     expires_at: float
+
+
+class DueDate(TypedDict):
+    dateTime: str
+    timeZone: str
 
 
 @dataclasses.dataclass
@@ -48,7 +57,7 @@ class Task:
     status: str
     createdDateTime: str
     lastModifiedDateTime: str
-    dueDateTime: str
+    dueDateTime: DueDate
     body: str
 
     def __init__(self, **kwargs: Union[str, int, bool]) -> None:
@@ -56,28 +65,32 @@ class Task:
             setattr(self, f.name, kwargs.get('id' if f.name == 'task_id' else f.name))
 
     def __str__(self) -> str:
-        return self.title.replace('|', '—').strip()
+        title = self.title.replace('|', '—').strip()
+        if self.due_date:
+            title += f' • Due {self.due_date.strftime("%x")}'
+
+        return title
 
     @property
-    def created_date(self):
+    def created_date(self) -> Optional[datetime]:
         if self.createdDateTime:
             return datetime.strptime(self.createdDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
         else:
-            return date(2000, 1, 1)
+            return None
 
     @property
-    def last_mod_date(self):
+    def last_mod_date(self) -> Optional[datetime]:
         if self.lastModifiedDateTime:
             return datetime.strptime(self.lastModifiedDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
         else:
-            return date(2000, 1, 1)
+            return None
 
     @property
-    def due_date(self):
+    def due_date(self) -> Optional[datetime]:
         if self.dueDateTime:
             return datetime.strptime(self.dueDateTime['dateTime'].split('.')[0], '%Y-%m-%dT%H:%M:%S')
         else:
-            return date(2000, 1, 1)
+            return None
 
 
 class ToDoConnection:
@@ -86,7 +99,7 @@ class ToDoConnection:
     _authority: str = 'https://login.microsoftonline.com/common'
     _authorize_endpoint: str = '/oauth2/v2.0/authorize'
     _token_endpoint: str = '/oauth2/v2.0/token'
-    _base_api_url: str = 'https://graph.microsoft.com/beta/me/todo/'
+    _base_api_url: str = 'https://graph.microsoft.com/v1.0/me/todo/'
 
     def __init__(self, client_id: str, client_secret: str, token: Token) -> None:
         self.client_id = client_id
@@ -126,9 +139,9 @@ class ToDoConnection:
         """Get all task lists."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.get(f'{ToDoConnection._base_api_url}/lists?top=99')
+        resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists?top=99')
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())['value']
         lists = [TaskList(**list_data) for list_data in contents]
@@ -139,9 +152,9 @@ class ToDoConnection:
         """Create task list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.post(f'{ToDoConnection._base_api_url}/lists', json={'displayName': name})
+        resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists', json={'displayName': name})
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())
 
@@ -151,9 +164,9 @@ class ToDoConnection:
         """Get task list details."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.get(f'{ToDoConnection._base_api_url}/lists/{list_id}')
+        resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}')
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())
 
@@ -163,9 +176,9 @@ class ToDoConnection:
         """Update task list details."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.patch(f'{ToDoConnection._base_api_url}/lists/{list_id}', json=list_data)
+        resp = oa_sess.patch(f'{ToDoConnection._base_api_url}lists/{list_id}', json=list_data)
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())
 
@@ -175,7 +188,9 @@ class ToDoConnection:
         """Delete task list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.delete(f'{ToDoConnection._base_api_url}/lists/{list_id}')
+        resp = oa_sess.delete(f'{ToDoConnection._base_api_url}lists/{list_id}')
+        if not resp.ok:
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         return resp.ok
 
@@ -183,22 +198,25 @@ class ToDoConnection:
         """Get all uncompleted tasks for the list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.get(f"{ToDoConnection._base_api_url}/lists/{list_id}/tasks?top=99&$filter=status ne 'completed'")
+        resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?top=99&$filter=status ne 'completed'")
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())['value']
         tasks = [Task(**task_data) for task_data in contents]
 
         return tasks
 
-    def create_task(self, title: str, list_id: str) -> Optional[Task]:
+    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None) -> Optional[Task]:
         """Create task in the list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.post(f'{ToDoConnection._base_api_url}/lists/{list_id}/tasks', json={'title': title})
+        task_data: Dict[str, Any] = {'title': title}
+        if due_date:
+            task_data['dueDateTime'] = {'dateTime': due_date.strftime('%Y-%m-%dT%H:%M:%S.0000000'), 'timeZone': 'UTC'}
+        resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks', json=task_data)
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())
 
@@ -208,9 +226,9 @@ class ToDoConnection:
         """Get task details."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.get(f'{ToDoConnection._base_api_url}/lists/{list_id}/tasks/{task_id}')
+        resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}')
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())
 
@@ -220,9 +238,9 @@ class ToDoConnection:
         """Update task details."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.patch(f'{ToDoConnection._base_api_url}/lists/{list_id}/tasks/{task_id}', json=task_data)
+        resp = oa_sess.patch(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}', json=task_data)
         if not resp.ok:
-            return None
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
         contents = json.loads(resp.content.decode())
 
@@ -232,9 +250,11 @@ class ToDoConnection:
         """Delete task from list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.delete(f'{ToDoConnection._base_api_url}/lists/{list_id}/tasks/{task_id}')
+        resp = oa_sess.delete(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}')
+        if not resp.ok:
+            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
-        return bool(resp.ok)
+        return True
 
     def complete_task(self, task_id: str, list_id: str) -> Optional[Task]:
         """Complete task from list."""
