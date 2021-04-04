@@ -3,7 +3,7 @@ import time
 import json
 import dataclasses
 from datetime import datetime
-from typing import Any, Dict, List, Optional, TypedDict, Union
+from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
 from requests_oauthlib import OAuth2Session
 
@@ -26,6 +26,11 @@ class Token(TypedDict):
 class DueDate(TypedDict):
     dateTime: str
     timeZone: str
+
+
+class Body(TypedDict):
+    content: str
+    contentType: Literal['text', 'html']
 
 
 @dataclasses.dataclass
@@ -58,7 +63,7 @@ class Task:
     createdDateTime: str
     lastModifiedDateTime: str
     dueDateTime: DueDate
-    body: str
+    body: Body
 
     def __init__(self, **kwargs: Union[str, int, bool]) -> None:
         for f in dataclasses.fields(self):
@@ -89,6 +94,13 @@ class Task:
     def due_date(self) -> Optional[datetime]:
         if self.dueDateTime:
             return datetime.strptime(self.dueDateTime['dateTime'].split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        else:
+            return None
+
+    @property
+    def body_text(self) -> Optional[str]:
+        if self.body:
+            return self.body['content']
         else:
             return None
 
@@ -207,13 +219,15 @@ class ToDoConnection:
 
         return tasks
 
-    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None) -> Optional[Task]:
+    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None, body_text: Optional[str] = None) -> Optional[Task]:
         """Create task in the list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         task_data: Dict[str, Any] = {'title': title}
         if due_date:
             task_data['dueDateTime'] = {'dateTime': due_date.strftime('%Y-%m-%dT%H:%M:%S.0000000'), 'timeZone': 'UTC'}
+        if body_text:
+            task_data['body'] = {'content': body_text, 'contentType': 'text'}
         resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks', json=task_data)
         if not resp.ok:
             raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
