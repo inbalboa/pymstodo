@@ -147,11 +147,11 @@ class ToDoConnection:
             new_token = oa_sess.refresh_token(token_url, client_id=self.client_id, client_secret=self.client_secret)
             self.token = new_token
 
-    def get_lists(self) -> Optional[List[TaskList]]:
+    def get_lists(self, limit: Optional[int] = 99) -> Optional[List[TaskList]]:
         """Get all task lists."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists?top=99')
+        resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists?$top={limit}')
         if not resp.ok:
             raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
@@ -206,11 +206,21 @@ class ToDoConnection:
 
         return resp.ok
 
-    def get_tasks(self, list_id: str) -> Optional[List[Task]]:
-        """Get all uncompleted tasks for the list."""
+    def get_tasks(self, list_id: str, limit: Optional[int] = 99, status: Optional[str] = None) -> Optional[List[Task]]:
+        """Get all tasks for the list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?top=99&$filter=status ne 'completed'")
+        if status:
+            if status=='all':
+                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}")
+            elif status=='completed':
+                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status eq 'completed'")
+            elif status=='notCompleted':
+                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status ne 'completed'")
+            else:
+                raise PymstodoError(f'{status} is an unexpected status parameter')
+        else:
+            resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status ne 'completed'")
         if not resp.ok:
             raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
