@@ -1,5 +1,5 @@
 # pymstodo ✔️
-[![PyPI](https://img.shields.io/pypi/v/pymstodo.svg)](https://pypi.org/project/pymstodo/) [![Build Status](https://travis-ci.org/inbalboa/pymstodo.svg?branch=master)](https://travis-ci.org/inbalboa/pymstodo) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![PyPI](https://img.shields.io/pypi/v/pymstodo.svg)](https://pypi.org/project/pymstodo/) [![Build Status](https://travis-ci.com/inbalboa/pymstodo.svg?branch=master)](https://travis-ci.com/inbalboa/pymstodo) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ### Python wrapper to deal with [Microsoft To Do](https://to-do.live.com).
 
@@ -34,4 +34,3 @@ print(task_list)
 print(*tasks, sep='\n')
 ```
 3. Full API description see at https://docs.microsoft.com/en-us/graph/api/resources/todo-overview
-
