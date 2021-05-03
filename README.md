@@ -9,7 +9,7 @@ pip3 install pymstodo
 ```
 
 ## Requirements
-* python >= 3.7
+* python >= 3.8
 * requests_oauthlib >= 1.3.0
 
 ## Usage
