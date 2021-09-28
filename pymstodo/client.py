@@ -196,7 +196,7 @@ class ToDoConnection:
 
         return TaskList(**contents)
 
-    def delete_list(self, list_id: str) -> Any:
+    def delete_list(self, list_id: str) -> bool:
         """Delete task list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
@@ -204,7 +204,7 @@ class ToDoConnection:
         if not resp.ok:
             raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
 
-        return resp.ok
+        return True
 
     def get_tasks(self, list_id: str, limit: Optional[int] = 99, status: Optional[str] = None) -> Optional[List[Task]]:
         """Get all tasks for the list."""
