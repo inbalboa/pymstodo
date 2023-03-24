@@ -206,30 +206,37 @@ class ToDoConnection:
 
         return True
 
-    def get_tasks(self, list_id: str, limit: Optional[int] = 99, status: Optional[str] = None) -> Optional[List[Task]]:
+    FILTERS = {
+        'completed': "filter=status eq 'completed'",
+        'notCompleted': "filter=status ne 'completed'",
+        'all': '',
+        '': "filter=status eq 'completed'",
+    }
+
+    def get_tasks(self, list_id: str, limit: Optional[int] = 0, status: Optional[str] = '') -> Optional[List[Task]]:
         """Get all tasks for the list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        if status:
-            if status=='all':
-                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}")
-            elif status=='completed':
-                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status eq 'completed'")
-            elif status=='notCompleted':
-                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status ne 'completed'")
-            else:
-                raise PymstodoError(f'{status} is an unexpected status parameter')
-        else:
-            resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status ne 'completed'")
-        if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
-
-        contents = json.loads(resp.content.decode())['value']
+        params = '&$'.join([
+            self.FILTERS.get(status, self.FILTERS['completed']),
+            f"top={limit or 1000}"
+        ])
+        url = f"{ToDoConnection._base_api_url}lists/{list_id}/tasks{params and f'?${params}'}"
+        contents = []
+        while (len(contents) < limit or limit <= 0) and url:
+            resp = oa_sess.get(url)
+            if not resp.ok:
+                raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            resp = json.loads(resp.content.decode())
+            url = resp.get('@odata.nextLink')
+            contents.extend(resp['value'])
+        if limit > 0:
+            contents = contents[:limit]
         tasks = [Task(**task_data) for task_data in contents]
-
         return tasks
 
-    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None, body_text: Optional[str] = None) -> Optional[Task]:
+    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None,
+                    body_text: Optional[str] = None) -> Optional[Task]:
         """Create task in the list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
