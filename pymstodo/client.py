@@ -65,7 +65,7 @@ class Task:
     dueDateTime: DueDate
     body: Body
 
-    def __init__(self, **kwargs: Union[str, int, bool]) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         for f in dataclasses.fields(self):
             setattr(self, f.name, kwargs.get('id' if f.name == 'task_id' else f.name))
 
@@ -206,25 +206,33 @@ class ToDoConnection:
 
         return True
 
-    def get_tasks(self, list_id: str, limit: Optional[int] = 99, status: Optional[str] = None) -> Optional[List[Task]]:
+    def get_tasks(self, list_id: str, limit: Optional[int] = 0, status: Optional[str] = None) -> Optional[List[Task]]:
         """Get all tasks for the list."""
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        if status:
-            if status=='all':
-                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}")
-            elif status=='completed':
-                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status eq 'completed'")
-            elif status=='notCompleted':
-                resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status ne 'completed'")
-            else:
-                raise PymstodoError(f'{status} is an unexpected status parameter')
-        else:
-            resp = oa_sess.get(f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?$top={limit}&$filter=status ne 'completed'")
-        if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
-
-        contents = json.loads(resp.content.decode())['value']
+        filters = {
+            'completed': "filter=status eq 'completed'",
+            'notCompleted': "filter=status ne 'completed'",
+            'all': None
+        }
+        eff_limit = limit or 1000
+        default_status = 'notCompleted'
+        params = (
+            filters.get(status or default_status, filters[default_status]),
+            f'top={eff_limit}'
+        )
+        params_str = '&$'.join(filter(None, params))
+        url = f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?${params_str}"
+        contents: List[Dict[str, Any]] = []
+        while (len(contents) < eff_limit or eff_limit <= 0) and url:
+            resp = oa_sess.get(url)
+            if not resp.ok:
+                raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            resp_content = json.loads(resp.content.decode())
+            url = resp_content.get('@odata.nextLink')
+            contents.extend(resp_content['value'])
+        if limit:
+            contents = contents[:limit]
         tasks = [Task(**task_data) for task_data in contents]
 
         return tasks
