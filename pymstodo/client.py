@@ -23,25 +23,38 @@ class Token(TypedDict):
     expires_at: float
 
 
-class DueDate(TypedDict):
+class _DueDate(TypedDict):
     dateTime: str
     timeZone: str
 
 
-class Body(TypedDict):
+class _Body(TypedDict):
     content: str
     contentType: Literal['text', 'html']
 
 
 @dataclasses.dataclass
 class TaskList:
-    list_id: str
-    displayName: str
-    isOwner: bool
-    isShared: bool
-    wellknownListName: str
+    '''
+    **To-Do task list** contains one or more todoTask resources.
+    '''
 
-    def __init__(self, **kwargs: Union[str, bool]) -> None:
+    list_id: str
+    '''The identifier of the task list, unique in the user's mailbox. Read-only.'''
+
+    displayName: str
+    '''The name of the task list.'''
+
+    isOwner: bool
+    '''`True` if the user is owner of the given task list.'''
+
+    isShared: bool
+    '''`True` if the task list is shared with other users.'''
+
+    wellknownListName: Literal['none', 'defaultList', 'flaggedEmails', 'unknownFutureValue']
+    '''Property indicating the list name if the given list is a well-known list. Possible values are: `none`, `defaultList`, `flaggedEmails`, `unknownFutureValue`.'''
+
+    def __init__(self, **kwargs: Any) -> None:
         for f in dataclasses.fields(self):
             setattr(self, f.name, kwargs.get('id' if f.name == 'list_id' else f.name))
 
@@ -55,15 +68,40 @@ class TaskList:
 
 @dataclasses.dataclass
 class Task:
+    '''
+    **To-Do task** represents a task, such as a piece of work or personal item, that can be tracked and completed.
+    '''
+
     task_id: str
-    title: str
-    isReminderOn: bool
-    importance: bool
-    status: str
+    '''Unique identifier for the task. By default, this value changes when the item is moved from one list to another.'''
+
+    body: _Body
+
+    categories: list[str]
+    '''The categories associated with the task.'''
+
+    completedDateTime: str
     createdDateTime: str
+    dueDateTime: _DueDate
+
+    hasAttachments: bool
+    '''Indicates whether the task has attachments.'''
+
+    title: str
+    '''A brief description of the task.'''
+
+    importance: Literal['low', 'normal', 'high']
+    '''The importance of the task. Possible values are: `low`, `normal`, `high`.'''
+
+    isReminderOn: bool
+    '''Set to true if an alert is set to remind the user of the task.'''
+
     lastModifiedDateTime: str
-    dueDateTime: DueDate
-    body: Body
+    reminderDateTime: str
+    startDateTime: str
+
+    status: Literal['notStarted', 'inProgress', 'completed', 'waitingOnOthers', 'deferred']
+    '''Indicates the state or progress of the task. Possible values are: `notStarted`, `inProgress`, `completed`, `waitingOnOthers`, `deferred`.'''
 
     def __init__(self, **kwargs: Any) -> None:
         for f in dataclasses.fields(self):
@@ -77,35 +115,66 @@ class Task:
         return title
 
     @property
+    def body_text(self) -> Optional[str]:
+        '''The task body that typically contains information about the task.'''
+        if self.body:
+            return self.body['content']
+        else:
+            return None
+
+    @property
+    def completed_date(self) -> Optional[datetime]:
+        '''The date and time in the specified time zone that the task was finished.'''
+        if self.completedDateTime:
+            return datetime.strptime(self.completedDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        else:
+            return None
+
+    @property
     def created_date(self) -> Optional[datetime]:
+        '''The date and time when the task was created. It is in UTC.'''
         if self.createdDateTime:
             return datetime.strptime(self.createdDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
         else:
             return None
 
     @property
-    def last_mod_date(self) -> Optional[datetime]:
-        if self.lastModifiedDateTime:
-            return datetime.strptime(self.lastModifiedDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-        else:
-            return None
-
-    @property
     def due_date(self) -> Optional[datetime]:
+        '''The date and time in the specified time zone that the task is to be finished.'''
         if self.dueDateTime:
             return datetime.strptime(self.dueDateTime['dateTime'].split('.')[0], '%Y-%m-%dT%H:%M:%S')
         else:
             return None
 
     @property
-    def body_text(self) -> Optional[str]:
-        if self.body:
-            return self.body['content']
+    def last_mod_date(self) -> Optional[datetime]:
+        '''The date and time when the task was last modified. It is in UTC.'''
+        if self.lastModifiedDateTime:
+            return datetime.strptime(self.lastModifiedDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        else:
+            return None
+
+    @property
+    def reminder_date(self) -> Optional[datetime]:
+        '''The date and time in the specified time zone for a reminder alert of the task to occur.'''
+        if self.reminderDateTime:
+            return datetime.strptime(self.reminderDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
+        else:
+            return None
+
+    @property
+    def start_date(self) -> Optional[datetime]:
+        '''The date and time in the specified time zone at which the task is scheduled to start.    '''
+        if self.startDateTime:
+            return datetime.strptime(self.startDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
         else:
             return None
 
 
 class ToDoConnection:
+    '''**To-Do connection**
+    your entry point to To-Do API
+    '''
     _redirect: str = 'https://localhost/login/authorized'
     _scope: str = 'openid offline_access tasks.readwrite'
     _authority: str = 'https://login.microsoftonline.com/common'
@@ -114,25 +183,37 @@ class ToDoConnection:
     _base_api_url: str = 'https://graph.microsoft.com/v1.0/me/todo/'
 
     def __init__(self, client_id: str, client_secret: str, token: Token) -> None:
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.token = token
+        self.client_id: str = client_id
+        '''API client ID.'''
 
-    @classmethod
-    def get_auth_url(cls, client_id: str) -> Any:
-        """Get the authorization_url."""
-        oa_sess = OAuth2Session(client_id, scope=cls._scope, redirect_uri=cls._redirect)
+        self.client_secret: str = client_secret
+        '''API client secret.'''
 
-        authorize_url = f'{cls._authority}{cls._authorize_endpoint}'
+        self.token: Token = token
+        '''Token obtained by method `get_token`.'''
+
+    @staticmethod
+    def get_auth_url(client_id: str) -> Any:
+        '''Get the authorization_url.
+    
+        Args:
+            client_id: API client ID
+
+        Returns:
+            Authorization URL to show to the user.
+        '''
+        oa_sess = OAuth2Session(client_id, scope=ToDoConnection._scope, redirect_uri=ToDoConnection._redirect)
+
+        authorize_url = f'{ToDoConnection._authority}{ToDoConnection._authorize_endpoint}'
         authorization_url, _ = oa_sess.authorization_url(authorize_url)
 
         return authorization_url
 
-    @classmethod
-    def get_token(cls, client_id: str, client_secret: str, redirect_resp: str) -> Any:
-        """Fetch the access token"""
-        oa_sess = OAuth2Session(client_id, scope=cls._scope, redirect_uri=cls._redirect)
-        token_url = f'{cls._authority}{cls._token_endpoint}'
+    @staticmethod
+    def get_token(client_id: str, client_secret: str, redirect_resp: str) -> Any:
+        '''Fetch the access token.'''
+        oa_sess = OAuth2Session(client_id, scope=ToDoConnection._scope, redirect_uri=ToDoConnection._redirect)
+        token_url = f'{ToDoConnection._authority}{ToDoConnection._token_endpoint}'
         token = oa_sess.fetch_token(token_url, client_secret=client_secret, authorization_response=redirect_resp)
 
         return token
@@ -148,7 +229,17 @@ class ToDoConnection:
             self.token = new_token
 
     def get_lists(self, limit: Optional[int] = 99) -> Optional[List[TaskList]]:
-        """Get all task lists."""
+        '''Get a list of the task lists.
+
+        Args:
+            limit: *optional* The limit size of the response (default is `99`)
+
+        Returns:
+            A list of the task lists.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.
+        '''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists?$top={limit}')
@@ -161,7 +252,17 @@ class ToDoConnection:
         return lists
 
     def create_list(self, name: str) -> Optional[TaskList]:
-        """Create task list."""
+        '''Create a new task list.
+
+        Args:
+            name: Title of the new task list
+
+        Returns:
+            A created task list.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.
+        '''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists', json={'displayName': name})
@@ -173,7 +274,17 @@ class ToDoConnection:
         return TaskList(**contents)
 
     def get_list(self, list_id: str) -> Optional[TaskList]:
-        """Get task list details."""
+        '''Read the properties of a task list.
+
+        Args:
+            list_id: Unique identifier for the task list
+
+        Returns:
+            A task list object.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.
+        '''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}')
@@ -185,7 +296,17 @@ class ToDoConnection:
         return TaskList(**contents)
 
     def update_list(self, list_id: str, **list_data: Union[str, bool]) -> Optional[TaskList]:
-        """Update task list details."""
+        '''Update the properties of a task list.
+
+        Args:
+            list_id: Unique identifier for the task list
+            list_data: Task properties from `TaskList` object
+
+        Returns:
+            An updated task list.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.patch(f'{ToDoConnection._base_api_url}lists/{list_id}', json=list_data)
@@ -197,7 +318,16 @@ class ToDoConnection:
         return TaskList(**contents)
 
     def delete_list(self, list_id: str) -> bool:
-        """Delete task list."""
+        '''Delete a task list.
+
+        Args:
+            list_id: Unique identifier for the task list
+
+        Returns:
+            `True`: If success.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.delete(f'{ToDoConnection._base_api_url}lists/{list_id}')
@@ -206,8 +336,20 @@ class ToDoConnection:
 
         return True
 
-    def get_tasks(self, list_id: str, limit: Optional[int] = 0, status: Optional[str] = None) -> Optional[List[Task]]:
-        """Get all tasks for the list."""
+    def get_tasks(self, list_id: str, limit: Optional[int] = 0, status: Optional[Literal['notStarted', 'inProgress', 'completed', 'waitingOnOthers', 'deferred']] = None) -> List[Task]:
+        '''Get tasks by a specified task list.
+
+        Args:
+            list_id: Unique identifier for the task list
+            limit: *optional* The limit size of the response (default is `1000`)
+            status: *optional* The state or progress of the task. Possible values are: `notStarted`, `inProgress`, `completed`, `waitingOnOthers`, `deferred` (default is `notCompleted`)
+
+        Returns:
+            Tasks of a specified task list.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.
+        '''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         filters = {
@@ -237,8 +379,20 @@ class ToDoConnection:
 
         return tasks
 
-    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None, body_text: Optional[str] = None) -> Optional[Task]:
-        """Create task in the list."""
+    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None, body_text: Optional[str] = None) -> Task:
+        '''Create a new task in a specified task list.
+
+        Args:
+            title: A brief description of the task
+            list_id: Unique identifier for the task list
+            due_date: *optional* The date and time that the task is to be finished
+            body_text: *optional* Information about the task
+
+        Returns:
+            A created task.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         task_data: Dict[str, Any] = {'title': title}
@@ -254,8 +408,18 @@ class ToDoConnection:
 
         return Task(**contents)
 
-    def get_task(self, task_id: str, list_id: str) -> Optional[Task]:
-        """Get task details."""
+    def get_task(self, task_id: str, list_id: str) -> Task:
+        '''Read the properties of a task.
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+
+        Returns:
+            A task object.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}')
@@ -266,8 +430,19 @@ class ToDoConnection:
 
         return Task(**contents)
 
-    def update_task(self, task_id: str, list_id: str, **task_data: Union[str, int, bool]) -> Optional[Task]:
-        """Update task details."""
+    def update_task(self, task_id: str, list_id: str, **task_data: Union[str, int, bool]) -> Task:
+        '''Update the properties of a task.
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+            task_data: Task properties from `Task` object
+
+        Returns:
+            An updated task.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.patch(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}', json=task_data)
@@ -279,7 +454,17 @@ class ToDoConnection:
         return Task(**contents)
 
     def delete_task(self, task_id: str, list_id: str) -> bool:
-        """Delete task from list."""
+        '''Delete a task.
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+
+        Returns:
+            `True`: If success.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.delete(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}')
@@ -288,10 +473,20 @@ class ToDoConnection:
 
         return True
 
-    def complete_task(self, task_id: str, list_id: str) -> Optional[Task]:
-        """Complete task from list."""
+    def complete_task(self, task_id: str, list_id: str) -> Task:
+        '''Complete a task.
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+
+        Returns:
+            A completed task.
+
+        Raises:
+            `PymstodoError`: An error occurred accessing the API.'''
         return self.update_task(task_id, list_id, status='completed')
 
 
-os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
-os.environ['OAUTHLIB_IGNORE_SCOPE_CHANGE'] = '1'
+#os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+#os.environ['OAUTHLIB_IGNORE_SCOPE_CHANGE'] = '1'

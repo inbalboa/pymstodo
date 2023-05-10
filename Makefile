@@ -13,9 +13,12 @@ pub:
 	@printf "==> git push...\n"
 	@git push origin "v$(TAG)"
 
+docs:
+	@printf "==> gen docs...\n"
+	@pdoc --docformat google --no-search --no-show-source --output-directory docs ./pymstodo/client.py
+
 run: lint tag pub
 	@printf "\nPublished at %s\n\n" "`date`"
 
 .DEFAULT_GOAL := run
-.PHONY: lint tag pub run
-
+.PHONY: lint tag pub docs run
