@@ -33,5 +33,6 @@ tasks = todo_client.get_tasks(task_list.list_id)
 print(task_list)
 print(*tasks, sep='\n')
 ```
-3. Full description of library objects and methods: https://raw.githubusercontent.com/inbalboa/pymstodo/master/docs/index.html
-API description by Microsoft see at https://docs.microsoft.com/en-us/graph/api/resources/todo-overview
+3. Full documentation: https://inbalboa.github.io/pymstodo/
+
+4. API description by Microsoft see at https://docs.microsoft.com/en-us/graph/api/resources/todo-overview
