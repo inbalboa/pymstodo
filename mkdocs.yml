@@ -1,0 +1,9 @@
+site_name: Pymstodo Docs
+
+theme:
+  name: "material"
+
+plugins:
+  - autorefs
+  - mkdocstrings
+
