@@ -24,8 +24,7 @@ docs_pub:
 	@printf "==> pub docs...\n"
 	@mkdocs gh-deploy
 
-docs: docs_gen docs_pub
-	@printf "==> docs...\n"
+docs: docs_pub
 
 run: lint tag pub
 	@printf "\nPublished at %s\n\n" "`date`"
