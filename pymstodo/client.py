@@ -245,7 +245,7 @@ class ToDoConnection:
         token: Token obtained by method `get_token`        
     '''
     _redirect: str = 'https://localhost/login/authorized'
-    _scope: str = 'openid offline_access tasks.readwrite'
+    _scope: str = 'openid Tasks.ReadWrite'
     _authority: str = 'https://login.microsoftonline.com/common'
     _authorize_endpoint: str = '/oauth2/v2.0/authorize'
     _token_endpoint: str = '/oauth2/v2.0/token'
