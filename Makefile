@@ -23,8 +23,12 @@ docs_pub:
 
 docs: docs_pub
 
+win_tz:
+	@printf "==> getting windows time zones...\n"
+	@python3 update_windows_zones_data.py
+
 run: lint tag pub
 	@printf "\nPublished at %s\n\n" "`date`"
 
 .DEFAULT_GOAL := run
-.PHONY: lint tag pub docs run
+.PHONY: lint tag pub docs win_tz run

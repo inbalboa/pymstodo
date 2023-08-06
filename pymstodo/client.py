@@ -1,17 +1,21 @@
-import os
-import time
-import json
 import dataclasses
-from datetime import datetime
+import json
+import time
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
 from requests_oauthlib import OAuth2Session
+from zoneinfo import ZoneInfo
+
+from .windows_zones_adapter import get_zoneinfo_name_by_windows_zone
 
 
 class PymstodoError(Exception):
     '''Basic Pymstodo exception'''
-    pass
+
+    def __init__(self, status_code: int, reason: str):
+        super().__init__(f'Error {status_code}: {reason}')
 
 
 class Token(TypedDict):
@@ -25,7 +29,7 @@ class Token(TypedDict):
     expires_at: float
 
 
-class _DueDate(TypedDict):
+class _DateTimeTimeZone(TypedDict):
     dateTime: str
     timeZone: str
 
@@ -132,13 +136,14 @@ class Task:
     categories: list[str]
     '''The categories associated with the task'''
 
-    completedDateTime: str
-    '''The date and time in the specified time zone that the task was finished. It is in UTC and uses ISO 8601 format'''
+    completedDateTime: _DateTimeTimeZone
+    '''The date and time in the specified time zone that the task was finished. Uses ISO 8601 format'''
 
     createdDateTime: str
     '''The date and time when the task was created. It is in UTC and uses ISO 8601 format'''
 
-    dueDateTime: _DueDate
+    dueDateTime: _DateTimeTimeZone
+    '''The date and time in the specified time zone that the task is to be finished. Uses ISO 8601 format'''
 
     hasAttachments: bool
     '''Indicates whether the task has attachments'''
@@ -155,10 +160,10 @@ class Task:
     lastModifiedDateTime: str
     '''The date and time when the task was last modified. It is in UTC and uses ISO 8601 format'''
 
-    reminderDateTime: str
+    reminderDateTime: _DateTimeTimeZone
     '''The date and time in the specified time zone for a reminder alert of the task to occur. Uses ISO 8601 format'''
 
-    startDateTime: str
+    startDateTime: _DateTimeTimeZone
     '''The date and time in the specified time zone at which the task is scheduled to start. Uses ISO 8601 format'''
 
     status: str
@@ -179,56 +184,49 @@ class Task:
         '''The task body that typically contains information about the task'''
         if self.body:
             return self.body['content']
-        else:
-            return None
+        return None
 
     @property
     def completed_date(self) -> Optional[datetime]:
         '''The date and time in the specified time zone that the task was finished'''
         if self.completedDateTime:
-            return datetime.strptime(self.completedDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-        else:
-            return None
+            return datetime.fromisoformat(self.completedDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.completedDateTime['timeZone'])))
+        return None
 
     @property
     def created_date(self) -> Optional[datetime]:
         '''The date and time when the task was created. It is in UTC'''
         if self.createdDateTime:
-            return datetime.strptime(self.createdDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-        else:
-            return None
+            return datetime.fromisoformat(self.createdDateTime).astimezone(timezone.utc)
+        return None
 
     @property
     def due_date(self) -> Optional[datetime]:
         '''The date and time in the specified time zone that the task is to be finished'''
         if self.dueDateTime:
-            return datetime.strptime(self.dueDateTime['dateTime'].split('.')[0], '%Y-%m-%dT%H:%M:%S')
-        else:
-            return None
+            return datetime.fromisoformat(self.dueDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.dueDateTime['timeZone'])))
+        return None
 
     @property
     def last_mod_date(self) -> Optional[datetime]:
         '''The date and time when the task was last modified. It is in UTC'''
         if self.lastModifiedDateTime:
-            return datetime.strptime(self.lastModifiedDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-        else:
-            return None
+            return datetime.fromisoformat(self.lastModifiedDateTime).astimezone(timezone.utc)
+        return None
 
     @property
     def reminder_date(self) -> Optional[datetime]:
         '''The date and time in the specified time zone for a reminder alert of the task to occur'''
         if self.reminderDateTime:
-            return datetime.strptime(self.reminderDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-        else:
-            return None
+            return datetime.fromisoformat(self.reminderDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.reminderDateTime['timeZone'])))
+        return None
 
     @property
     def start_date(self) -> Optional[datetime]:
         '''The date and time in the specified time zone at which the task is scheduled to start'''
         if self.startDateTime:
-            return datetime.strptime(self.startDateTime.split('.')[0], '%Y-%m-%dT%H:%M:%S')
-        else:
-            return None
+            return datetime.fromisoformat(self.startDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.startDateTime['timeZone'])))
+        return None
 
     @property
     def task_status(self) -> TaskStatus:
@@ -242,7 +240,7 @@ class ToDoConnection:
     Args:
         client_id: API client ID
         client_secret: API client secret
-        token: Token obtained by method `get_token`        
+        token: Token obtained by method `get_token`
     '''
     _redirect: str = 'https://localhost/login/authorized'
     _scope: str = 'openid Tasks.ReadWrite'
@@ -278,9 +276,8 @@ class ToDoConnection:
         '''Fetch the access token'''
         oa_sess = OAuth2Session(client_id, scope=ToDoConnection._scope, redirect_uri=ToDoConnection._redirect)
         token_url = f'{ToDoConnection._authority}{ToDoConnection._token_endpoint}'
-        token = oa_sess.fetch_token(token_url, client_secret=client_secret, authorization_response=redirect_resp)
+        return oa_sess.fetch_token(token_url, client_secret=client_secret, authorization_response=redirect_resp)
 
-        return token
 
     def _refresh_token(self) -> None:
         now = time.time()
@@ -308,12 +305,11 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists?$top={limit}')
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())['value']
-        lists = [TaskList(**list_data) for list_data in contents]
+        return [TaskList(**list_data) for list_data in contents]
 
-        return lists
 
     def create_list(self, name: str) -> TaskList:
         '''Create a new task list
@@ -331,7 +327,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists', json={'displayName': name})
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())
 
@@ -353,7 +349,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}')
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())
 
@@ -375,7 +371,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.patch(f'{ToDoConnection._base_api_url}lists/{list_id}', json=list_data)
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())
 
@@ -396,7 +392,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.delete(f'{ToDoConnection._base_api_url}lists/{list_id}')
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         return True
 
@@ -427,20 +423,19 @@ class ToDoConnection:
             f'top={eff_limit}'
         )
         params_str = '&$'.join(filter(None, params))
-        url = f"{ToDoConnection._base_api_url}lists/{list_id}/tasks?${params_str}"
+        url = f'{ToDoConnection._base_api_url}lists/{list_id}/tasks?${params_str}'
         contents: List[Dict[str, Any]] = []
         while (len(contents) < eff_limit or eff_limit <= 0) and url:
             resp = oa_sess.get(url)
             if not resp.ok:
-                raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+                raise PymstodoError(resp.status_code, resp.reason)
             resp_content = json.loads(resp.content.decode())
             url = resp_content.get('@odata.nextLink')
             contents.extend(resp_content['value'])
         if limit:
             contents = contents[:limit]
-        tasks = [Task(**task_data) for task_data in contents]
+        return [Task(**task_data) for task_data in contents]
 
-        return tasks
 
     def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None, body_text: Optional[str] = None) -> Task:
         '''Create a new task in a specified task list
@@ -465,7 +460,7 @@ class ToDoConnection:
             task_data['body'] = {'content': body_text, 'contentType': 'text'}
         resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks', json=task_data)
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())
 
@@ -487,7 +482,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}')
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())
 
@@ -510,7 +505,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.patch(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}', json=task_data)
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())
 
@@ -532,7 +527,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
         resp = oa_sess.delete(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}')
         if not resp.ok:
-            raise PymstodoError(f'Error {resp.status_code}: {resp.reason}')
+            raise PymstodoError(resp.status_code, resp.reason)
 
         return True
 
