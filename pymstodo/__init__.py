@@ -1,1 +1,1 @@
-from .client import TaskList, Task, ToDoConnection
+from .client import TaskList, Task, ToDoConnection, TaskStatusFilter, PymstodoError
