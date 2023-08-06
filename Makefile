@@ -1,11 +1,8 @@
 TAG=`python setup.py --version`
-SPHINX_BUILD ?= sphinx-build
-SPHINX_SOURCEDIR=.
-SPHINX_BUILDDIR=_build
 
 lint:
 	@printf "==> linting...\n"
-	@python3 -m flake8 --select=DUO pymstodo
+	@python3 -m ruff check "$(CURDIR)"
 	@python3 -m mypy --ignore-missing-imports --strict pymstodo
 
 tag:
@@ -30,4 +27,4 @@ run: lint tag pub
 	@printf "\nPublished at %s\n\n" "`date`"
 
 .DEFAULT_GOAL := run
-.PHONY: lint tag pub docs run sphinx-build
+.PHONY: lint tag pub docs run

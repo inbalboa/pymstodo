@@ -1,0 +1,144 @@
+extend-select = [
+  # pyflakes, pycodestyle
+  "F", "E", "W",
+
+  # mmcabe
+  "C90",
+
+  # isort
+  "I",
+
+  # pep8-naming
+  "N",
+
+  # pyupgrade
+  "UP",
+
+  # flake8-2020
+  "YTT",
+
+  # flake8-boolean-trap
+  "FBT",
+
+  # flake8-bugbear
+  "B",
+
+  # flake8-comprehensions
+  "C4",
+
+  # flake8-pie
+  "PIE",
+
+  # flake8-simplify
+  "SIM",
+
+  # flake8-tidy-imports
+  "TID",
+
+  # flake8-gettext
+  "INT",
+
+  # pygrep-hooks
+  "PGH",
+
+  # pylint
+  "PLE", "PLW",
+
+  # unused noqa
+  "RUF100",
+
+  # flake8-bandit
+  "S",
+
+  # flake8-async
+  "ASYNC",
+
+  # flake8-slots
+  "SLOT",
+
+  # flake8-unused-arguments
+  "ARG",
+
+  # flake8-implicit-str-concat
+  "ISC",
+
+  # flake8-quotes
+  "Q",
+
+  # flake8-return
+  "RET",
+
+  # tryceratops
+  "TRY",
+
+  # flake8-logging-format
+  "G",
+
+  # flake8-no-pep420
+  "INP",
+
+  # flake8-use-pathlib
+  "PTH",
+
+  # flake8-builtins
+  "A",
+
+  # flake8-executable
+  "EXE",
+
+  # flake8-fixme
+  "FIX",
+
+  # flake8-blind-except
+  "BLE",
+
+  # flake8-errmsg
+  "EM",
+
+  # flake8-raise
+  "RSE",
+
+  # flake8-self
+  "SLF",
+
+  # flake8-type-checking
+  "TCH",
+
+  # Perflint
+  "PERF",
+
+  # eradicate
+  "ERA",
+
+  # flake8-datetimez
+  "DTZ",
+]
+
+extend-ignore = [
+  # Allow zip() without strict=
+  "B905",
+  # No line length errors
+  "E501",
+]
+
+exclude = ["pymstodo/__init__.py"]
+
+fix = true
+show-fixes = true
+target-version = "py38"
+
+[isort]
+combine-as-imports = true
+lines-after-imports = 2
+
+[mccabe]
+max-complexity = 15
+
+[pep8-naming]
+extend-ignore-names = ["displayName", "isOwner", "isShared", "wellknownListName", "completedDateTime", "createdDateTime", "dueDateTime", "hasAttachments", "isReminderOn", "lastModifiedDateTime", "reminderDateTime", "startDateTime"]
+
+[flake8-quotes]
+docstring-quotes = "single"
+inline-quotes = "single"
+multiline-quotes = "single"
+
