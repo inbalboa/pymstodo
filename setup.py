@@ -1,22 +1,19 @@
+from pathlib import Path
+
 import setuptools
 
 
 def long_description():
-    long_description = ''
-    with open('README.md', 'r') as ld:
-        long_description = ld.read()
-    return long_description
+    with Path('README.md').open() as ld:
+        return ld.read()
 
 def find_requires():
-    requirements = []
-    with open('requirements.txt', 'r') as reqs:
-        requirements = reqs.readlines()
-    return requirements
+    with Path('requirements.txt').open() as reqs:
+        return reqs.readlines()
 
 def find_version():
-    with open('VERSION', 'r') as ver:
-        version_ = ver.readline().strip()
-    return version_
+    with Path('VERSION').open() as ver:
+        return ver.readline().strip()
 
 
 setuptools.setup(
