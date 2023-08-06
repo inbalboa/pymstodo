@@ -11,7 +11,8 @@ tag:
 
 pub:
 	@printf "==> git push...\n"
-	@git push --atomic origin main "v$(TAG)"
+	@git tag -a "v$(TAG)" -m "Release $(TAG)"
+	@git push --atomic origin master "v$(TAG)"
 
 docs_gen:
 	@printf "==> gen docs...\n"
