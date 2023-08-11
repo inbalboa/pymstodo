@@ -26,7 +26,7 @@ docs: docs_pub
 
 win_tz:
 	@printf "==> getting windows time zones...\n"
-	@python3 update_windows_zones_data.py
+	@python3 update_win_tz.py
 
 run: lint tag pub
 	@printf "\nPublished at %s\n\n" "`date`"

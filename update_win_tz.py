@@ -16,5 +16,5 @@ for zone in zones_xml.xpath('//mapZone'):
     if attrib['territory'] == '001':
         tz_data[attrib['other']] = attrib['type']
 
-Path(OUTPUT_FILE).write_text('windows_zones = ' + str(tz_data))
+Path(OUTPUT_FILE).write_text(f'windows_zones = {tz_data}\n')
 
