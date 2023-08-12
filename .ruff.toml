@@ -126,6 +126,7 @@ exclude = ["pymstodo/__init__.py"]
 fix = true
 show-fixes = true
 target-version = "py38"
+line-length = 120
 
 [isort]
 combine-as-imports = true

@@ -5,13 +5,16 @@ lint:
 	@python3 -m ruff check "$(CURDIR)"
 	@python3 -m mypy --ignore-missing-imports --strict pymstodo
 
+check:
+	@printf "==> checking the working tree... "
+	@sh -c 'if [ -z "$\(git status --porcelain=v1)" ]; then printf "clean\n"; else printf "working tree is dirty, please, commit changes\n" && false; fi'
+
 tag:
 	@printf "==> tagging...\n"
 	@git tag -a "v$(TAG)" -m "Release $(TAG)"
 
 pub:
-	@printf "==> git push...\n"
-	@git tag -a "v$(TAG)" -m "Release $(TAG)"
+	@printf "==> pushing...\n"
 	@git push --atomic origin master "v$(TAG)"
 
 docs_gen:
@@ -28,8 +31,8 @@ win_tz:
 	@printf "==> getting windows time zones...\n"
 	@python3 update_win_tz.py
 
-run: lint tag pub
+run: lint check tag pub docs
 	@printf "\nPublished at %s\n\n" "`date`"
 
 .DEFAULT_GOAL := run
-.PHONY: lint tag pub docs win_tz run
+.PHONY: lint check tag pub docs win_tz run

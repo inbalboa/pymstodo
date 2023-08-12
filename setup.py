@@ -19,7 +19,7 @@ def find_version():
 setuptools.setup(
     name='pymstodo',
     version=find_version(),
-    author='Sergey Shlyapugin',
+    author='Serhiy Shliapuhin',
     author_email='shlyapugin@gmail.com',
     description='Microsoft To Do API client',
     long_description=long_description(),
