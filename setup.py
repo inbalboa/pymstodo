@@ -27,11 +27,10 @@ setuptools.setup(
     url='https://github.com/inbalboa/pymstodo',
     packages=setuptools.find_packages(),
     install_requires=find_requires(),
-    python_requires='>=3.8,<4.0',
+    python_requires='>=3.10,<4.0',
     classifiers=[
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3 :: Only',
         'License :: OSI Approved',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',

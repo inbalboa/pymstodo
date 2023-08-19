@@ -3,10 +3,10 @@ import json
 import time
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
+from typing import Any, Literal, TypedDict
+from zoneinfo import ZoneInfo
 
 from requests_oauthlib import OAuth2Session
-from zoneinfo import ZoneInfo
 
 from .windows_zones_adapter import get_zoneinfo_name_by_windows_zone
 
@@ -20,7 +20,7 @@ class PymstodoError(Exception):
 
 class Token(TypedDict):
     token_type: str
-    scope: List[str]
+    scope: list[str]
     expires_in: int
     ext_expires_in: int
     access_token: str
@@ -119,7 +119,7 @@ class TaskList:
         return 'href=https://to-do.live.com/tasks/{self.list_id}'
 
     @property
-    def wellknown_list_name(self) -> Optional[WellknownListName]:
+    def wellknown_list_name(self) -> WellknownListName | None:
         '''Property indicating the list name if the given list is a well-known list'''
         return None if self.wellknownListName == 'none' else WellknownListName(self.wellknownListName)
 
@@ -180,49 +180,49 @@ class Task:
         return title
 
     @property
-    def body_text(self) -> Optional[str]:
+    def body_text(self) -> str | None:
         '''The task body that typically contains information about the task'''
         if self.body:
             return self.body['content']
         return None
 
     @property
-    def completed_date(self) -> Optional[datetime]:
+    def completed_date(self) -> datetime | None:
         '''The date and time in the specified time zone that the task was finished'''
         if self.completedDateTime:
             return datetime.fromisoformat(self.completedDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.completedDateTime['timeZone'])))
         return None
 
     @property
-    def created_date(self) -> Optional[datetime]:
+    def created_date(self) -> datetime | None:
         '''The date and time when the task was created. It is in UTC'''
         if self.createdDateTime:
             return datetime.fromisoformat(self.createdDateTime).astimezone(timezone.utc)
         return None
 
     @property
-    def due_date(self) -> Optional[datetime]:
+    def due_date(self) -> datetime | None:
         '''The date and time in the specified time zone that the task is to be finished'''
         if self.dueDateTime:
             return datetime.fromisoformat(self.dueDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.dueDateTime['timeZone'])))
         return None
 
     @property
-    def last_mod_date(self) -> Optional[datetime]:
+    def last_mod_date(self) -> datetime | None:
         '''The date and time when the task was last modified. It is in UTC'''
         if self.lastModifiedDateTime:
             return datetime.fromisoformat(self.lastModifiedDateTime).astimezone(timezone.utc)
         return None
 
     @property
-    def reminder_date(self) -> Optional[datetime]:
+    def reminder_date(self) -> datetime | None:
         '''The date and time in the specified time zone for a reminder alert of the task to occur'''
         if self.reminderDateTime:
             return datetime.fromisoformat(self.reminderDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.reminderDateTime['timeZone'])))
         return None
 
     @property
-    def start_date(self) -> Optional[datetime]:
+    def start_date(self) -> datetime | None:
         '''The date and time in the specified time zone at which the task is scheduled to start'''
         if self.startDateTime:
             return datetime.fromisoformat(self.startDateTime['dateTime']).astimezone(ZoneInfo(get_zoneinfo_name_by_windows_zone(self.startDateTime['timeZone'])))
@@ -289,7 +289,7 @@ class ToDoConnection:
             new_token = oa_sess.refresh_token(token_url, client_id=self.client_id, client_secret=self.client_secret)
             self.token = new_token
 
-    def get_lists(self, limit: Optional[int] = 99) -> List[TaskList]:
+    def get_lists(self, limit: int | None = 99) -> list[TaskList]:
         '''Get a list of the task lists
 
         Args:
@@ -355,7 +355,7 @@ class ToDoConnection:
 
         return TaskList(**contents)
 
-    def update_list(self, list_id: str, **list_data: Union[str, bool]) -> TaskList:
+    def update_list(self, list_id: str, **list_data: str | bool) -> TaskList:
         '''Update the properties of a task list
 
         Args:
@@ -396,7 +396,7 @@ class ToDoConnection:
 
         return True
 
-    def get_tasks(self, list_id: str, limit: Optional[int] = 1000, status: Optional[TaskStatusFilter] = TaskStatusFilter.NOT_COMPLETED) -> List[Task]:
+    def get_tasks(self, list_id: str, limit: int | None = 1000, status: TaskStatusFilter | None = TaskStatusFilter.NOT_COMPLETED) -> list[Task]:
         '''Get tasks by a specified task list
 
         Args:
@@ -424,7 +424,7 @@ class ToDoConnection:
         )
         params_str = '&$'.join(filter(None, params))
         url = f'{ToDoConnection._base_api_url}lists/{list_id}/tasks?${params_str}'
-        contents: List[Dict[str, Any]] = []
+        contents: list[dict[str, Any]] = []
         while (len(contents) < eff_limit or eff_limit <= 0) and url:
             resp = oa_sess.get(url)
             if not resp.ok:
@@ -437,7 +437,7 @@ class ToDoConnection:
         return [Task(**task_data) for task_data in contents]
 
 
-    def create_task(self, title: str, list_id: str, due_date: Optional[datetime] = None, body_text: Optional[str] = None) -> Task:
+    def create_task(self, title: str, list_id: str, due_date: datetime | None = None, body_text: str | None = None) -> Task:
         '''Create a new task in a specified task list
 
         Args:
@@ -453,7 +453,7 @@ class ToDoConnection:
             PymstodoError: An error occurred accessing the API'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        task_data: Dict[str, Any] = {'title': title}
+        task_data: dict[str, Any] = {'title': title}
         if due_date:
             task_data['dueDateTime'] = {'dateTime': due_date.strftime('%Y-%m-%dT%H:%M:%S.0000000'), 'timeZone': 'UTC'}
         if body_text:
@@ -488,7 +488,7 @@ class ToDoConnection:
 
         return Task(**contents)
 
-    def update_task(self, task_id: str, list_id: str, **task_data: Union[str, int, bool]) -> Task:
+    def update_task(self, task_id: str, list_id: str, **task_data: str | int | bool) -> Task:
         '''Update the properties of a task
 
         Args:
