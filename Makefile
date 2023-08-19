@@ -7,7 +7,7 @@ lint:
 
 check:
 	@printf "==> checking the working tree... "
-	@sh -c 'if [ -z "$\(git status --porcelain=v1)" ]; then printf "clean\n"; else printf "working tree is dirty, please, commit changes\n" && false; fi'
+	@sh -c 'if [ -z "`git status --porcelain=v1`" ]; then printf "clean\n"; else printf "working tree is dirty, please, commit changes\n" && false; fi'
 
 tag:
 	@printf "==> tagging...\n"
