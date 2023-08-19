@@ -1,5 +1,5 @@
 # pymstodo ✔️
-[![PyPI](https://img.shields.io/pypi/v/pymstodo.svg)](https://pypi.org/project/pymstodo/) [![Build Status](https://travis-ci.com/inbalboa/pymstodo.svg?branch=master)](https://travis-ci.com/inbalboa/pymstodo) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![PyPI](https://img.shields.io/pypi/v/pymstodo.svg)](https://pypi.org/project/pymstodo/) [![Build Status](https://github.com/inbalboa/pymstodo/actions/workflows/main.yml/badge.svg)](https://github.com/inbalboa/pymstodo/actions/workflows/main.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ### Python wrapper to deal with [Microsoft To Do](https://to-do.live.com).
 
@@ -9,7 +9,7 @@ pip3 install pymstodo
 ```
 
 ## Requirements
-* python >= 3.8
+* python >= 3.10
 * requests_oauthlib >= 1.3.0
 
 ## Usage
