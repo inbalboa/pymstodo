@@ -44,8 +44,8 @@ extend-select = [
   # pylint
   "PLE", "PLW",
 
-  # unused noqa
-  "RUF100",
+  # ruff
+  "RUF",
 
   # flake8-bandit
   "S",
