@@ -112,6 +112,9 @@ extend-select = [
 
   # flake8-datetimez
   "DTZ",
+
+  # Refurb
+  "FURB",
 ]
 
 extend-ignore = [

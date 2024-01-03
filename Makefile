@@ -2,7 +2,7 @@ TAG=`python setup.py --version`
 
 lint:
 	@printf "==> linting...\n"
-	@python3 -m ruff check "$(CURDIR)"
+	@python3 -m ruff check --preview --unsafe-fixes "$(CURDIR)"
 	@python3 -m mypy --ignore-missing-imports --strict pymstodo
 
 check:
