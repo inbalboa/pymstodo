@@ -7,9 +7,11 @@ def long_description():
     with Path('README.md').open() as ld:
         return ld.read()
 
+
 def find_requires():
     with Path('requirements.txt').open() as reqs:
         return reqs.readlines()
+
 
 def find_version():
     with Path('VERSION').open() as ver:

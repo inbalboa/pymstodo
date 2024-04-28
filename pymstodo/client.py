@@ -278,7 +278,6 @@ class ToDoConnection:
         token_url = f'{ToDoConnection._authority}{ToDoConnection._token_endpoint}'
         return oa_sess.fetch_token(token_url, client_secret=client_secret, authorization_response=redirect_resp)
 
-
     def _refresh_token(self) -> None:
         now = time.time()
         expire_time = self.token['expires_at'] - 300
@@ -309,7 +308,6 @@ class ToDoConnection:
 
         contents = json.loads(resp.content.decode())['value']
         return [TaskList(**list_data) for list_data in contents]
-
 
     def create_list(self, name: str) -> TaskList:
         '''Create a new task list
@@ -436,7 +434,6 @@ class ToDoConnection:
             contents = contents[:limit]
         return [Task(**task_data) for task_data in contents]
 
-
     def create_task(self, title: str, list_id: str, due_date: datetime | None = None, body_text: str | None = None) -> Task:
         '''Create a new task in a specified task list
 
@@ -544,4 +541,3 @@ class ToDoConnection:
         Raises:
             PymstodoError: An error occurred accessing the API'''
         return self.update_task(task_id, list_id, status='completed')
-
