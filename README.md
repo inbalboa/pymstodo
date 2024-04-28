@@ -23,7 +23,7 @@ client_secret = 'PLACE YOUR CLIENT SECRET'
 
 auth_url = ToDoConnection.get_auth_url(client_id)
 redirect_resp = input(f'Go here and authorize:\n{auth_url}\n\nPaste the full redirect URL below:\n')
-token = ToDoConnection.get_token(client_id, client_secret, redirect_resp)
+token = ToDoConnection.get_token(client_id, client_secret, redirect_resp)  # you have to save it somewhere
 todo_client = ToDoConnection(client_id=client_id, client_secret=client_secret, token=token)
 
 lists = todo_client.get_lists()
