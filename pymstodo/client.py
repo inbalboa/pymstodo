@@ -1,11 +1,11 @@
 import dataclasses
 import json
+import os
 import time
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal, TypedDict
 from zoneinfo import ZoneInfo
-import os
 
 from requests_oauthlib import OAuth2Session
 
@@ -543,5 +543,6 @@ class ToDoConnection:
             PymstodoError: An error occurred accessing the API'''
         return self.update_task(task_id, list_id, status='completed')
 
-os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'  # noqa: S105
 os.environ['OAUTHLIB_IGNORE_SCOPE_CHANGE'] = '1'
