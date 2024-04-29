@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal, TypedDict
 from zoneinfo import ZoneInfo
+import os
 
 from requests_oauthlib import OAuth2Session
 
@@ -243,7 +244,7 @@ class ToDoConnection:
         token: Token obtained by method `get_token`
     '''
     _redirect: str = 'https://localhost/login/authorized'
-    _scope: str = 'openid Tasks.ReadWrite email profile'
+    _scope: str = 'openid offline_access Tasks.ReadWrite'
     _authority: str = 'https://login.microsoftonline.com/common'
     _authorize_endpoint: str = '/oauth2/v2.0/authorize'
     _token_endpoint: str = '/oauth2/v2.0/token'
@@ -541,3 +542,6 @@ class ToDoConnection:
         Raises:
             PymstodoError: An error occurred accessing the API'''
         return self.update_task(task_id, list_id, status='completed')
+
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+os.environ['OAUTHLIB_IGNORE_SCOPE_CHANGE'] = '1'
