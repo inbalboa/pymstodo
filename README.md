@@ -14,7 +14,7 @@ pip3 install pymstodo
 
 ## Usage
 1. [Get an API key](https://github.com/inbalboa/pymstodo/blob/master/GET_KEY.md) before using `pymstodo`.
-2. Use it to initialize client. Here is an example:
+2. Use it to initialize the client. Here is an example:
 ```python
 from pymstodo import ToDoConnection
 

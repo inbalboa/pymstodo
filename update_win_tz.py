@@ -16,4 +16,4 @@ for zone in zones_xml.getroot().find('.//windowsZones/mapTimezones'):
     if attrib['territory'] == '001':
         tz_data[attrib['other']] = attrib['type']
 
-Path(OUTPUT_FILE).write_text(f'windows_zones = {tz_data}\n')
+Path(OUTPUT_FILE).write_text(f'windows_zones = {tz_data}\n', encoding='locale')
