@@ -117,7 +117,7 @@ class TaskList:
     @property
     def link(self) -> str:
         '''Link to the task list on web.'''
-        return 'href=https://to-do.live.com/tasks/{self.list_id}'
+        return f'href=https://to-do.live.com/tasks/{self.list_id}'
 
     @property
     def wellknown_list_name(self) -> WellknownListName | None:
