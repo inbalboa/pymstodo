@@ -50,7 +50,7 @@ extend-select = [
   "PGH",
 
   # pylint
-  "PLE", "PLW",
+  "PLE", "PLW", "PLR", "PLC",
 
   # ruff
   "RUF",
@@ -123,6 +123,27 @@ extend-select = [
 
   # Refurb
   "FURB",
+
+  # flynt
+  "FLY",
+
+  # flake8-pytest-style
+  "PT",
+
+  # flake8-pyi
+  "PYI",
+
+  # flake8-logging
+  "LOG",
+
+  # flake8-import-conventions
+  "ICN",
+
+  # flake8-debugger
+  "T10",
+
+  # flake8-commas
+  "COM818", "COM819",
 ]
 
 extend-ignore = [
