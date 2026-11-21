@@ -247,7 +247,7 @@ class ToDoConnection:
     _scope: str = 'openid offline_access Tasks.ReadWrite'
     _authority: str = 'https://login.microsoftonline.com/common'
     _authorize_endpoint: str = '/oauth2/v2.0/authorize'
-    _token_endpoint: str = '/oauth2/v2.0/token'  # noqa: S105
+    _token_endpoint: str = '/oauth2/v2.0/token'  # ruff: ignore[hardcoded-password-string]
     _base_api_url: str = 'https://graph.microsoft.com/v1.0/me/todo/'
 
     def __init__(self, client_id: str, client_secret: str, token: Token) -> None:
@@ -544,5 +544,5 @@ class ToDoConnection:
         return self.update_task(task_id, list_id, status='completed')
 
 
-os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'  # noqa: S105
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'  # ruff: ignore[hardcoded-password-string]
 os.environ['OAUTHLIB_IGNORE_SCOPE_CHANGE'] = '1'

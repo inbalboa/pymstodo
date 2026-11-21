@@ -143,14 +143,14 @@ extend-select = [
   "T10",
 
   # flake8-commas
-  "COM818", "COM819",
+  "trailing-comma-on-bare-tuple", "prohibited-trailing-comma",
 ]
 
 extend-ignore = [
   # Allow zip() without strict=
-  "B905",
+  "zip-without-explicit-strict",
   # No line length errors
-  "E501",
+  "line-too-long",
 ]
 
 [lint.isort]

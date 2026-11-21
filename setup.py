@@ -4,8 +4,7 @@ import setuptools
 
 
 def long_description():
-    with Path('README.md').open(encoding='locale') as ld:
-        return ld.read()
+    return Path('README.md').read_text(encoding='locale')
 
 
 def find_requires():

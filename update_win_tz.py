@@ -7,7 +7,7 @@ from defusedxml import ElementTree
 ZONES_XML_URL = 'https://raw.githubusercontent.com/unicode-org/cldr/main/common/supplemental/windowsZones.xml'
 OUTPUT_FILE = 'pymstodo/windows_zones_data.py'
 
-with urlopen(ZONES_XML_URL) as response:  # noqa: S310
+with urlopen(ZONES_XML_URL) as response:
     zones_xml = ElementTree.parse(response)
 
 tz_data = {}
