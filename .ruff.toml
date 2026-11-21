@@ -110,7 +110,7 @@ extend-select = [
   "SLF",
 
   # flake8-type-checking
-  "TCH",
+  "TC",
 
   # Perflint
   "PERF",
